@@ -8,33 +8,44 @@ Written in Python3, supports HTTP GET/POST requests and in-memory caching of res
 To start the server, execute _EnrichServer.py_. The server listens on port 8080 by default
 
 
-HTTP GET requests roughly follow the format of http://<server>/api/<endpoint>?<param1>=<val1>&<param2>=<val2>...
+HTTP GET requests roughly follow the format of http://&lt;server>/api/&lt;endpoint>?&lt;param1>=&lt;val1>&&lt;param2>=&lt;val2>...
 
 The following API endpoints are available.
-	* api/list - Returns a list of the currently available modules
-	* api/cache - Returns the current cache of results
-	* api/<module>/info - Returns all available metadata on the module
-	* api/<module>?<params>
+* api/list - Returns a list of the currently available modules
+* api/cache - Returns the current cache of results
+* api/&lt;module>/info - Returns all available metadata on the module
+* api/&lt;module>?&lt;params>
 	
-POST requests should be sent to http://<server>/api. The body of the request should be in the following format
-'''{
+POST requests should be sent to http://&lt;server>/api. The body of the request should be in the following format
+```
+{
 	"action":<enrich|info|list>,
 	"module":<module_name>,
 	"args": {"data":"val", "data2","val2", ...}
-}'''
+}
+```
 	
 	
 All modules must be stored in ./modules/, relative to pwd of EnrichServer.py.
 
 Modules *must* implement a class named _Enricher_ as a subset of the _BaseEnricher.BaseEnricher_ class.
+
 Modules *should* include an override for the _do_enrich_ method, where the arguments to the enricher are passed as a dict.
+
 Modules *may* enable in-memory caching of results by setting the member variable _shouldCache_ to True.
+
 NOTE: Caching is limited to a default of 100 entries per module by default
 
 Currently provided modules are as follows:
-	* Sleeper - Sleeps for 10 seconds then echos the _data_ parameter; Used to test asynch
-	* StrRev - Returns the mirror of the _data_ parameter
-	* Entropy - Returns the Shannon entropy of the _data_ parameter over an optional _charset_ parameter( Default to DNS charset )
+* Sleeper - Sleeps for 10 seconds then echos the _data_ parameter; Used to test asynch
+* StrRev - Returns the mirror of the _data_ parameter
+* Entropy - Returns the Shannon entropy of the _data_ parameter over an optional _charset_ parameter( Default to DNS charset )
+
+Planned modules:
+* UmbrellaTop1M - Return the ranking of the domain provided in _data_
+* WHOIS - Return WHOIS data for domain provided in _data_
+* ASN - Provide ASN information(including owner) of IP address in _data_
+* ES_Query - Return the result of _query_ against _es_server_
 	
 
 
