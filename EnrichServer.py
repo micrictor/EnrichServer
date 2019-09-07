@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
+import argparse
 import importlib,urllib,json,os,threading
 
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-import socketserver
 
 class EnrichmentHTTPServer(ThreadingHTTPServer):
-	def __init__(self, server_address, request_handler):
-		self.cache = EnrichmentCache()
+	def __init__(self, server_address, request_handler, max_cache_len):
+		self.cache = EnrichmentCache(max_cache_len)
 		return ThreadingHTTPServer.__init__(self, server_address, request_handler)
 		
 class EnrichmentRequestHandler(BaseHTTPRequestHandler):
@@ -141,16 +141,15 @@ class EnrichmentHandler:
 		self.cache = cache
 		try :
 			self.modules_available = list(x.replace('.py', '') for x in os.listdir('./modules/'))
-			
-			# There's probably a better way to do this
-			self.modules_available.remove('__init__')
-			self.modules_available.remove('__pycache__')
-			self.modules_available.remove('BaseEnricher')
-			
 			self.modules = {}
+
 			for module in self.modules_available:
-				self.modules[module] = importlib.import_module('modules.' + module)
-				self.modules[module] = self.modules[module].Enricher()
+				try:
+					self.modules[module] = importlib.import_module('modules.' + module)
+					self.modules[module] = self.modules[module].Enricher()
+				except:
+					self.modules[module] = None
+					continue
 		except FileNotFoundError:
 			print("ERROR! No modules found!")
 			
@@ -182,7 +181,7 @@ class EnrichmentHandler:
 		return json.dumps(self.modules_available)
 	
 class EnrichmentCache():
-	def __init__(self, max_cache_len=100):
+	def __init__(self, max_cache_len):
 		self.max_cache_len = max_cache_len
 		self._cache = dict()
 		self._lock = dict()
@@ -229,7 +228,13 @@ class EnrichmentCache():
 		
 		
 if __name__ == '__main__':
-	http_server = EnrichmentHTTPServer(('',8080), EnrichmentRequestHandler)
+	parser = argparse.ArgumentParser(description="An HTTP API for data enrichment")
+	parser.add_argument('--host', dest='host', help='IP address the server will bind to', default='')
+	parser.add_argument('-p', '--port', dest='port', help='Port the server will bind to', default=8080, type=int)
+	parser.add_argument('-m', '--max-cache', dest='max_cache_len', help='Maximum number of items to be cached per module', default=250, type=int)
+	args = parser.parse_args()
+	
+	http_server = EnrichmentHTTPServer((args.host,args.port), EnrichmentRequestHandler, args.max_cache_len)
 	print("Starting HTTP server...")
 	try:
 		http_server.serve_forever()
