@@ -18,10 +18,12 @@ If debug is enabled with the --debug flag:
 * debug/list - Returns a list of the currently available modules
 * debug/cache - Returns the current cache of results
 	
-POST requests should be sent to http://&lt;server>/api. The body of the request should be in the following format
+POST requests may be made to the same endpoints, with arguments passed in key-value pairs or as JSON. 
+
+JSON body should be in the following format
 ```
 {
-	"action":<enrich|info|list>,
+	"action":<enrich|info>,
 	"module":<module_name>,
 	"args": {"data":"val", "data2","val2", ...}
 }
@@ -41,7 +43,7 @@ NOTE: Caching is limited to a default of 100 entries per module by default
 Currently provided modules are as follows:
 * Sleeper - Sleeps for 10 seconds then echos the _data_ parameter; Used to test asynch
 * StrRev - Returns the mirror of the _data_ parameter
-* Entropy - Returns the Shannon entropy of the _data_ parameter over an optional _charset_ parameter( Default to DNS charset )
+* Entropy - Returns the Shannon entropy of the _data_ parameter over an optional _charset_ parameter( Default to DNS ASCII charset )
 
 Planned modules:
 * UmbrellaTop1M - Return the ranking of the domain provided in _data_

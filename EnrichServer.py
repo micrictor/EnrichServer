@@ -7,6 +7,26 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 DEBUG_ENABLED = 0
 
+def parse_arguments(args_str: str) -> dict:
+	if(args_str[0] == '{'): # JSON (hopefully)
+		arg_dict = json.loads(args_str)
+		if(arg_dict['action'] == 'info'):
+			return {'info':True}
+		elif(arg_dict['action'] == 'enrich'):
+			return arg_dict['args']
+	else: # k=v pairs
+		arg_dict = args_str.split('&')
+		for arg in arg_dict:
+			arg_dict[arg_dict.index(arg)] = arg.split('=')
+
+		# Handle the case of /api/module?info	
+		try:
+			arg_dict = dict(arg_dict)
+		except:
+			arg_dict = {arg_dict[0][0]:True}
+
+		return arg_dict
+
 class EnrichmentHTTPServer(ThreadingHTTPServer):
 	def __init__(self, server_address, request_handler, max_cache_len):
 		self.cache = EnrichmentCache(max_cache_len)
@@ -28,7 +48,7 @@ class EnrichmentRequestHandler(BaseHTTPRequestHandler):
 			print("Failed to send result: %s" % str(e))
 			return False
 
-	def send_failed(self, err_str: str("Unspecified server error."), err_code: int(500)) -> bool:
+	def send_failed(self, err_str: str = "Unspecified server error.", err_code: int = 500 ) -> bool:
 		try:
 			self.send_response(err_code)
 			self.end_headers()
@@ -53,7 +73,7 @@ class EnrichmentRequestHandler(BaseHTTPRequestHandler):
 		return
 
 	def handle_api(self, module_name: str, module_args: dict):
-		if( module_args['info'] ):
+		if( module_args.get('info') ):
 			self.send_result(self.enricher.get_module_info(module_name))
 			return
 			
@@ -74,75 +94,29 @@ class EnrichmentRequestHandler(BaseHTTPRequestHandler):
 		if( DEBUG_ENABLED and req_uri[0] == 'debug' ):
 			self.handle_debug(req_uri[1])
 		elif( req_uri[0] == 'api' ):
-			arg_dict = parsed_req.query.split('&')
-			for arg in arg_dict:
-				arg_dict[arg_dict.index(arg)] = arg.split('=')
-
-			# Handle the case of /api/module?info	
-			try:
-				arg_dict = dict(arg_dict)
-			except:
-				arg_dict = {arg_list[0][0]:True}
-
-			self.handle_api(req_uri[1:],arg_dict)
+			self.handle_api(req_uri[1],parse_arguments(parsed_req.query))
 		
-	# Accepts arguments as JSON-formatted data
+	# Accepts requests to the same endpoints as GET
+	# Accepts traditional k=v format as well as JSON
+	# JSON format below
 	"""
 	{
-		"action":<enrich|info|list>,
-		"module":<module_name>,
+		"action":<enrich|info>,
 		"args": {"data":"val", "data2","val2", ...}
 	}
 	"""
 	def do_POST(self):
-		payload_len = int(self.headers['Content-Length'])
-		payload = self.rfile.read(payload_len).decode()
+		parsed_req = urllib.parse.urlparse(self.path)
 		
+		req_uri = parsed_req.path.split('/')[1:] # Avoid null first string
 		
-		try:
-			payload = json.loads(payload)
-		except:
-			self.send_response(500)
-			self.end_headers()
-			self.wfile.write(b'POST data not in JSON format!')
-			return
-		
-		if( payload['action'] == "list" ):
-			try:
-				module_list = self.enricher.list_modules()
-				self.send_response(200)
-				self.end_headers()
-				self.wfile.write(module_list.encode())
-			except:
-				self.send_response(500)
-				self.end_headers()
-				self.wfile.write(b'Unspecified server error!')
+		if( DEBUG_ENABLED and req_uri[0] == 'debug' ):
+			self.handle_debug(req_uri[1])
+		elif( req_uri[0] == 'api' ):
+			payload_len = int(self.headers['Content-Length'])
+			payload = self.rfile.read(payload_len).decode()
 
-		elif( payload['action'] == "info" ):
-			try:
-				module_info = self.enricher.get_module_info(payload['module'])
-				self.send_response(200)
-				self.end_headers()
-				self.wfile.write(module_info.encode())
-			except:
-				self.send_response(500)
-				self.end_headers()
-				self.wfile.write(b'Unspecified server error!')
-				
-		elif( payload['action'] == "enrich" ):
-			try:
-				module_resp = self.enricher.do_enrich(payload['module'], json.loads(payload['args']))
-				self.send_response(200)
-				self.end_headers()
-				self.wfile.write(module_resp.encode())
-			except:
-				self.send_response(500)
-				self.end_headers()
-				self.wfile.write(b'Unspecified server error!')
-		else:
-			self.send_response(404)
-			self.end_headers()
-			self.wfile.write(b('Action %s not valid!' % payload['action']))
+			self.handle_api(req_uri[1],parse_arguments(payload))
 	
 class EnrichmentHandler:
 	def __init__(self, cache):
@@ -170,12 +144,12 @@ class EnrichmentHandler:
 		if( not self.is_valid_module(module_name) ):
 			return ("Module %s not found!" % module_name)
 			
-		if( self.modules[module].shouldCache and self.cache.get(module_name, args) != None ):
+		if( self.modules[module_name].shouldCache and self.cache.get(module_name, args) != None ):
 			return self.cache.get(module_name,module_args)
 		
 		ret_val = self.modules[module_name].do_enrich(module_args)
 		if( self.modules[module_name].shouldCache ):
-			self.cache.set(module_name, args, ret_val)
+			self.cache.set(module_name, module_args, ret_val)
 			
 		return ret_val
 	
