@@ -8,13 +8,15 @@ Written in Python3, supports HTTP GET/POST requests and in-memory caching of res
 To start the server, execute _EnrichServer.py_. The server listens on port 8080 by default
 
 
-HTTP GET requests roughly follow the format of http://&lt;server>/api/&lt;endpoint>?&lt;param1>=&lt;val1>&&lt;param2>=&lt;val2>...
+API requests roughly follow the format of http://&lt;server>/api/&lt;endpoint>?&lt;param1>=&lt;val1>&&lt;param2>=&lt;val2>...
 
 The following API endpoints are available.
-* api/list - Returns a list of the currently available modules
-* api/cache - Returns the current cache of results
-* api/&lt;module>/info - Returns all available metadata on the module
+* api/&lt;module>?info - Returns all available metadata on the module
 * api/&lt;module>?&lt;params>
+
+If debug is enabled with the --debug flag:
+* debug/list - Returns a list of the currently available modules
+* debug/cache - Returns the current cache of results
 	
 POST requests should be sent to http://&lt;server>/api. The body of the request should be in the following format
 ```
