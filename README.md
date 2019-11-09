@@ -46,7 +46,7 @@ Currently provided modules are as follows:
 * Entropy - Returns the Shannon entropy of the _data_ parameter over an optional _charset_ parameter( Default to DNS ASCII charset )
 
 Planned modules:
-* UmbrellaTop1M - Return the ranking of the domain provided in _data_
+* RDAP lookup of IP/domain
 * WHOIS - Return WHOIS data for domain provided in _data_
 * ASN - Provide ASN information(including owner) of IP address in _data_
 * ES_Query - Return the result of _query_ against _es_server_
