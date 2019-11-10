@@ -13,7 +13,7 @@ class Enricher(BaseEnricher.BaseEnricher):
 	}
 	shouldCache = True
 	
-	def do_enrich(self, args):
+	def do_enrich(self, args: dict) -> str:
 		if( args.get('data') == None ):
 			return "0"
 		

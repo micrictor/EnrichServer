@@ -13,7 +13,7 @@ class Enricher(BaseEnricher.BaseEnricher):
 		'PARAMETERS':'data: The string to echoed'
 	}
 	
-	def do_enrich(self, args):
+	def do_enrich(self, args: dict) -> str:
 		time.sleep(10)
 		return args['data']
 	

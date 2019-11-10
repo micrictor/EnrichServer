@@ -14,9 +14,9 @@ class BaseEnricher:
 	#def __init__(self):
 		
 		
-	def do_enrich(self, args):
+	def do_enrich(self, args: dict) -> str:
 		return args['data']
 	
-	def about(self):
+	def about(self) -> str:
 		return json.dumps(self.METADATA)
 			

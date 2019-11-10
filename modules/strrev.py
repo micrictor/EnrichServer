@@ -14,5 +14,5 @@ class Enricher(BaseEnricher.BaseEnricher):
 	}
 	shouldCache = True
 	
-	def do_enrich(self, args):
+	def do_enrich(self, args: dict) -> str:
 		return args['data'][::-1]
